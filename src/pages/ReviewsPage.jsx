@@ -16,7 +16,7 @@ function ReviewsPage() {
   // Asegúrate de que esta URL coincida con tu backend desplegado o localhost
   // Si estás en desarrollo local, déjalo como 'http://localhost:5000/api/reviews'
   // Si vas a desplegar, cámbialo a la URL de tu backend en Render/Railway/etc.
-  const API_URL = 'https://mam-33cu.onrender.com/'; 
+  const API_URL = 'https://mam-33cu.onrender.com/api/reviews';
 
   useEffect(() => {
     const fetchReviews = async () => {
