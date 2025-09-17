@@ -17,6 +17,8 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Conectado a MongoDB Atlas'))
   .catch(err => console.error('Error al conectar a MongoDB Atlas:', err));
 
+// --- MÓDULO DE RESEÑAS ---
+
 // Definir el Schema y Modelo de Mongoose para las reseñas
 const reviewSchema = new mongoose.Schema({
   text: {
@@ -24,7 +26,6 @@ const reviewSchema = new mongoose.Schema({
     required: true,
     minlength: 5 // Mínimo 5 caracteres para una reseña
   },
-  // No necesitamos campos de usuario para la anonimidad
   createdAt: {
     type: Date,
     default: Date.now
@@ -33,36 +34,7 @@ const reviewSchema = new mongoose.Schema({
 
 const Review = mongoose.model('Review', reviewSchema);
 
-// --- CÓDIGO NUEVO PARA LAS CITAS ---
-// Definir el Schema y Modelo de Mongoose para las citas
-const appointmentSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-  },
-  date: {
-    type: Date,
-    required: true,
-  },
-  time: {
-    type: String,
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
-const Appointment = mongoose.model('Appointment', appointmentSchema);
-// --- FIN DEL CÓDIGO NUEVO ---
-
-
-// Rutas de la API
+// Rutas de la API para reseñas
 
 // GET todas las reseñas
 app.get('/api/reviews', async (req, res) => {
@@ -88,30 +60,72 @@ app.post('/api/reviews', async (req, res) => {
     const newReview = await review.save();
     res.status(201).json(newReview); // 201 Created
   } catch (err) {
-    res.status(400).json({ message: err.message }); // 400 Bad Request por errores de validación (ej. minlength)
+    res.status(400).json({ message: err.message });
   }
 });
 
-// --- CÓDIGO NUEVO PARA LAS CITAS ---
+// --- FIN DEL MÓDULO DE RESEÑAS ---
+
+// --- MÓDULO DE CITAS ---
+
+// Definir el Schema y Modelo de Mongoose para las citas
+const appointmentSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: true,
+  },
+  date: {
+    type: Date,
+    required: true,
+  },
+  time: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const Appointment = mongoose.model('Appointment', appointmentSchema);
+
+// Rutas de la API para citas
+
 // POST una nueva cita
 app.post('/api/appointments', async (req, res) => {
-  const { name, email, date, time } = req.body;
+  const { name, email, date, time } = req.body;
 
-  // Validación básica
-  if (!name || !email || !date || !time) {
-    return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
-  }
+  if (!name || !email || !date || !time) {
+    return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
+  }
 
-  const newAppointment = new Appointment({ name, email, date, time });
+  const newAppointment = new Appointment({ name, email, date, time });
 
-  try {
-    const savedAppointment = await newAppointment.save();
-    res.status(201).json(savedAppointment); // 201 Created
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
+  try {
+    const savedAppointment = await newAppointment.save();
+    res.status(201).json(savedAppointment); // 201 Created
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 });
-// --- FIN DEL CÓDIGO NUEVO ---
+
+// GET todas las citas
+app.get('/api/appointments', async (req, res) => {
+  try {
+    const appointments = await Appointment.find().sort({ createdAt: -1 });
+    res.status(200).json(appointments);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// --- FIN DEL MÓDULO DE CITAS ---
+
 
 // Iniciar el servidor
 app.listen(PORT, () => {
