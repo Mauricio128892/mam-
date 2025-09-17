@@ -1,8 +1,11 @@
 // src/components/AppointmentModal.jsx
-import React, { useState, useEffect } from 'react'; // Importa useEffect
+import React, { useState, useEffect } from 'react';
 import { format, parseISO, isBefore } from 'date-fns';
-import { es } from 'date-fns/locale'; // Importa el locale español para format
-import BackgroundHome from '../assets/images/FONDO.png'; // Importa la imagen de fondo
+import { es } from 'date-fns/locale'; 
+import BackgroundHome from '../assets/images/FONDO.png';
+
+// Importa el nuevo URL de la API de citas
+const API_URL = 'https://mam-33cu.onrender.com/api/appointments'; 
 
 function AppointmentModal({ isOpen, onClose }) {
   const [name, setName] = useState('');
@@ -13,23 +16,19 @@ function AppointmentModal({ isOpen, onClose }) {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
-  // Estado para controlar la animación
   const [animateIn, setAnimateIn] = useState(false);
 
-  // useEffect para activar la animación cuando el modal se abre
   useEffect(() => {
     if (isOpen) {
       setAnimateIn(true);
     } else {
-      // Opcional: reiniciar el estado de animación cuando se cierra para futuras aperturas
       setAnimateIn(false);
     }
   }, [isOpen]);
 
-
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
     setFormSuccess('');
@@ -49,47 +48,54 @@ function AppointmentModal({ isOpen, onClose }) {
       return;
     }
 
-    // Construir el mensaje para WhatsApp con la fecha y hora preferida
-    const whatsappMessage = encodeURIComponent(
-      `Hola, me gustaría agendar una cita.\n` +
-      `Nombre: ${name}\n` +
-      `Email: ${email}\n` +
-      `Teléfono: ${phone}\n` +
-      `Fecha y Hora Preferida: ${format(appointmentDate, "dd/MM/yyyy HH:mm", { locale: es })} (hora en punto preferible)\n` +
-      (message ? `Mensaje Adicional: ${message}` : '\n') +
-      `\nPor favor, confírmame la disponibilidad para esta fecha/hora o proponme una alternativa.`
-    );
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Enviar todos los datos necesarios para el backend
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          phone: phone, 
+          date: appointmentDate,
+          time: format(appointmentDate, 'HH:mm'),
+        }),
+      });
 
-    const phoneNumber = '5219818194455'; // Número de tu mamá con código de país (ej. 52 para México)
+      const result = await response.json();
 
-    // Abrir WhatsApp con el mensaje pre-rellenado
-    window.open(`https://wa.me/${phoneNumber}?text=${whatsappMessage}`, '_blank');
+      if (!response.ok) {
+        throw new Error(result.message || 'Error al agendar la cita.');
+      }
 
-    setFormSuccess('Su solicitud de cita ha sido enviada a WhatsApp. Por favor, espere la confirmación de la psicóloga.');
-    // Opcional: Resetear el formulario o cerrar modal después de un breve éxito
-    // setName('');
-    // setEmail('');
-    // setPhone('');
-    // setSelectedDateTime('');
-    // setMessage('');
-    // onClose(); // Podrías cerrar el modal después de unos segundos
+      setFormSuccess('¡Cita agendada con éxito! La psicóloga revisará tu solicitud.');
+      // Opcional: limpiar el formulario después del éxito
+      setName('');
+      setEmail('');
+      setPhone('');
+      setSelectedDateTime('');
+      setMessage('');
+    } catch (error) {
+      console.error('Error al enviar la cita:', error);
+      setFormError(`Error: ${error.message}`);
+    }
   };
 
-  // Función auxiliar para parsear la fecha y hora de manera segura
   const parseDateTime = (dateTimeString) => {
     try {
       const date = parseISO(dateTimeString);
-      if (isNaN(date.getTime())) { // Comprobar si la fecha es inválida
+      if (isNaN(date.getTime())) {
         throw new Error('Fecha y hora seleccionada no válida.');
       }
       return date;
     } catch (error) {
       setFormError('Formato de fecha y hora no válido. Por favor, selecciona una fecha y hora.');
-      return new Date(0); // Epoch date, muy en el pasado
+      return new Date(0);
     }
   };
 
-  // Función para obtener la fecha y hora mínima válida para el input datetime-local
   const getMinDateTime = () => {
     const now = new Date();
     const nextValidTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes() + 5);
@@ -97,7 +103,6 @@ function AppointmentModal({ isOpen, onClose }) {
   };
 
   return (
-    // Contenedor principal del modal con el fondo
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4"
       style={{
@@ -107,15 +112,13 @@ function AppointmentModal({ isOpen, onClose }) {
         backgroundAttachment: 'fixed',
       }}
     >
-      {/* Capa de superposición para que el contenido sea legible */}
       <div className="absolute inset-0 bg-white opacity-90 z-0"></div>
 
-      {/* Contenido del modal con la animación */}
       <div
         className={`bg-white p-8 rounded-lg shadow-2xl max-w-lg w-full relative z-10 transform transition-all duration-300 ${
           animateIn ? 'scale-100 opacity-100 animate-fade-in-up-custom' : 'scale-95 opacity-0'
         }`}
-        style={{ animationDelay: '0.1s' }} // Pequeño retraso para la animación del modal
+        style={{ animationDelay: '0.1s' }}
       >
         <button
           onClick={onClose}
@@ -169,7 +172,6 @@ function AppointmentModal({ isOpen, onClose }) {
             <label htmlFor="datetime" className="block text-gray-700 text-sm font-bold mb-2">
               Fecha y Hora Preferida:
             </label>
-            {/* Aviso de horarios */}
             <p className="text-sm text-gray-600 mb-2">
               Horario de atención:
               <br/>
@@ -207,9 +209,9 @@ function AppointmentModal({ isOpen, onClose }) {
 
           <button
             type="submit"
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-lg shadow-lg w-full transition duration-300 hover:scale-105"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full text-lg shadow-lg w-full transition duration-300 hover:scale-105"
           >
-            Enviar Solicitud por WhatsApp
+            Enviar Solicitud
           </button>
         </form>
       </div>

@@ -12,10 +12,8 @@ function ReviewsPage() {
   const [newReviewText, setNewReviewText] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [formError, setFormError] = useState(null); // Nuevo estado para errores del formulario
 
-  // Asegúrate de que esta URL coincida con tu backend desplegado o localhost
-  // Si estás en desarrollo local, déjalo como 'http://localhost:5000/api/reviews'
-  // Si vas a desplegar, cámbialo a la URL de tu backend en Render/Railway/etc.
   const API_URL = 'https://mam-33cu.onrender.com/api/reviews';
 
   useEffect(() => {
@@ -41,8 +39,16 @@ function ReviewsPage() {
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
+    setFormError(null); // Limpia cualquier error anterior
+    
+    // Validar en el frontend para una mejor experiencia de usuario
     if (newReviewText.trim() === '') {
-      alert('La reseña no puede estar vacía.');
+      setFormError('La reseña no puede estar vacía.');
+      return;
+    }
+
+    if (newReviewText.trim().length < 5) { // Validacion para minimo 5 caracteres
+      setFormError('Tu reseña debe tener al menos 5 caracteres.');
       return;
     }
 
@@ -60,8 +66,8 @@ function ReviewsPage() {
       }
 
       const newReview = await response.json();
-      setReviews((prevReviews) => [newReview, ...prevReviews]); // Añade la nueva reseña al principio
-      setNewReviewText(''); // Limpia el campo de texto
+      setReviews((prevReviews) => [newReview, ...prevReviews]);
+      setNewReviewText('');
     } catch (err) {
       console.error('Error submitting review:', err);
       setError('No se pudo enviar la reseña. Por favor, inténtalo de nuevo.');
@@ -106,6 +112,8 @@ function ReviewsPage() {
               value={newReviewText}
               onChange={(e) => setNewReviewText(e.target.value)}
             ></textarea>
+            {/* Mensaje de error del formulario */}
+            {formError && <p className="text-red-500 text-sm mb-4">{formError}</p>} 
             <button
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-full shadow-lg transition duration-300 transform hover:scale-105"
