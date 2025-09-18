@@ -1,18 +1,24 @@
 // src/components/AppointmentModal.jsx
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, isBefore } from 'date-fns';
-import { es } from 'date-fns/locale'; 
+import { es } from 'date-fns/locale';
 import BackgroundHome from '../assets/images/FONDO.png';
+import {
+  getCountries,
+  getCountryCallingCode,
+  isPossiblePhoneNumber,
+  parsePhoneNumber,
+} from 'react-phone-number-input';
+import metadata from 'libphonenumber-js/metadata.min.json';
 
-// Importa el nuevo URL de la API de citas
-const API_URL = 'https://mam-33cu.onrender.com/api/appointments'; 
+const API_URL = 'https://mam-33cu.onrender.com/api/appointments';
 
 function AppointmentModal({ isOpen, onClose }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState('MX');
+  const [number, setNumber] = useState('');
   const [selectedDateTime, setSelectedDateTime] = useState('');
-  const [message, setMessage] = useState('');
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
@@ -33,15 +39,20 @@ function AppointmentModal({ isOpen, onClose }) {
     setFormError('');
     setFormSuccess('');
 
-    // Validaciones básicas: Campos obligatorios
-    if (!name || !email || !phone || !selectedDateTime) {
+    const fullPhoneNumber = `+${getCountryCallingCode(country, metadata)}${number}`;
+
+    if (!name || !email || !country || !number || !selectedDateTime) {
       setFormError('Por favor, completa todos los campos obligatorios.');
+      return;
+    }
+
+    if (!isPossiblePhoneNumber(fullPhoneNumber, { metadata })) {
+      setFormError('El número de teléfono no es válido. Por favor, revisa el país y el número.');
       return;
     }
 
     const appointmentDate = parseDateTime(selectedDateTime);
 
-    // Validar que la fecha/hora no sea en el pasado
     const now = new Date();
     if (isBefore(appointmentDate, now)) {
       setFormError('No puedes agendar citas en el pasado.');
@@ -54,11 +65,10 @@ function AppointmentModal({ isOpen, onClose }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        // Enviar todos los datos necesarios para el backend
         body: JSON.stringify({
           name: name,
           email: email,
-          phone: phone, 
+          phone: fullPhoneNumber,
           date: appointmentDate,
           time: format(appointmentDate, 'HH:mm'),
         }),
@@ -70,13 +80,13 @@ function AppointmentModal({ isOpen, onClose }) {
         throw new Error(result.message || 'Error al agendar la cita.');
       }
 
-      setFormSuccesssetFormSuccess ('¡Solicitud enviada con éxito! La psicóloga se pondrá en contacto con usted a la brevedad posible, ya sea por WhatsApp o correo electrónico, para confirmar y coordinar los detalles de su cita. Por favor, esté al pendiente.');
-      // Opcional: limpiar el formulario después del éxito
+      setFormSuccess('¡Solicitud enviada con éxito! La psicóloga se pondrá en contacto con usted a la brevedad posible, ya sea por WhatsApp o correo electrónico, para confirmar y coordinar los detalles de su cita. Por favor, esté al pendiente.');
+
       setName('');
       setEmail('');
-      setPhone('');
+      setCountry('MX');
+      setNumber('');
       setSelectedDateTime('');
-      setMessage('');
     } catch (error) {
       console.error('Error al enviar la cita:', error);
       setFormError(`Error: ${error.message}`);
@@ -101,6 +111,15 @@ function AppointmentModal({ isOpen, onClose }) {
     const nextValidTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes() + 5);
     return format(nextValidTime, "yyyy-MM-dd'T'HH:mm");
   };
+
+  const countries = getCountries(metadata).map(countryCode => {
+    const callingCode = getCountryCallingCode(countryCode, metadata);
+    return {
+      code: countryCode,
+      name: new Intl.DisplayNames(['es'], { type: 'region' }).of(countryCode),
+      callingCode: callingCode ? `+${callingCode}` : ''
+    };
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div
@@ -156,17 +175,38 @@ function AppointmentModal({ isOpen, onClose }) {
             />
           </div>
           <div>
+            <label htmlFor="country" className="block text-gray-700 text-sm font-bold mb-2">
+              País:
+            </label>
+            <select
+              id="country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            >
+              {countries.map(({ code, name, callingCode }) => (
+                <option key={code} value={code}>
+                  {name} ({callingCode})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">
               Teléfono (WhatsApp preferible):
             </label>
-            <input
-              type="tel"
-              id="phone"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-            />
+            <div className="flex items-center shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+              <span className="text-gray-500">{getCountryCallingCode(country, metadata) ? `+${getCountryCallingCode(country, metadata)}` : ''}</span>
+              <input
+                type="tel"
+                id="phone"
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+                placeholder="Ingresa tu número de teléfono"
+                className="ml-2 flex-1 outline-none border-none"
+                required
+              />
+            </div>
           </div>
           <div>
             <label htmlFor="datetime" className="block text-gray-700 text-sm font-bold mb-2">
@@ -190,18 +230,6 @@ function AppointmentModal({ isOpen, onClose }) {
               min={getMinDateTime()}
               required
             />
-          </div>
-          <div>
-            <label htmlFor="message" className="block text-gray-700 text-sm font-bold mb-2">
-              Mensaje Adicional (Opcional):
-            </label>
-            <textarea
-              id="message"
-              rows="3"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            ></textarea>
           </div>
 
           {formError && <p className="text-red-500 text-sm italic">{formError}</p>}

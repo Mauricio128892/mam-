@@ -1,7 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+@import 'react-phone-number-input/style.css';
 /* También revisa que las animaciones personalizadas estén ahí */
 @keyframes float {
   0% { transform: translateY(0px); }
@@ -27,4 +27,69 @@
 .animate-fade-in-up-custom {
   animation: fadeInMoveUp 0.6s ease-out forwards;
   opacity: 0;
+}
+/* src/index.css */
+
+/* ... (tus otros estilos de Tailwind y la importación de la biblioteca) */
+
+/* Estilos para el campo de teléfono */
+/* src/index.css */
+
+/* ... (tus otros estilos de Tailwind y la importación de la biblioteca) */
+
+/* Estilos para el campo de teléfono */
+/* src/index.css */
+
+/* ... (tus otros estilos de Tailwind y la importación de la biblioteca) */
+
+/* Estilos para el campo de teléfono */
+/* src/index.css */
+
+/* ... (tus otros estilos de Tailwind y la importación de la biblioteca) */
+
+/* Estilos para el campo de teléfono */
+.PhoneInput {
+  display: flex;
+  align-items: center;
+  border-radius: 0.25rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+}
+
+/* El campo de número de teléfono ocupará todo el espacio restante */
+.PhoneInputInput {
+  flex: 1; /* Esto lo hace crecer */
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  color: #4b5563; /* color de texto */
+}
+
+/* Reglas para hacer que el selector de país sea más pequeño */
+.PhoneInputCountry {
+  margin-right: 0.5rem; /* Espacio entre el selector y el número */
+  flex-shrink: 0;
+  max-width: 120px; /* Limita su ancho */
+}
+
+/* Reglas para arreglar la bandera */
+.PhoneInputCountryIcon {
+  height: 1.25rem !important;
+  width: auto !important;
+  box-shadow: none !important;
+}
+
+.PhoneInputCountryIconImg {
+  width: 1.25rem !important;
+  height: auto !important;
+  background: none !important;
+}
+
+.PhoneInput:focus-within {
+  border-color: #3b82f6; /* color del borde al hacer foco */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 }
