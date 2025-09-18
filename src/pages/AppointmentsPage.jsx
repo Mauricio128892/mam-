@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // ¡IMPORTANTE! Cambia esta contraseña por una que solo tú conozcas
-const ACCESS_PASSWORD = 'tu_contraseña_secreta_aqui'; 
+const ACCESS_PASSWORD = '161448'; 
 
 const API_URL = 'https://mam-33cu.onrender.com/api/appointments';
 

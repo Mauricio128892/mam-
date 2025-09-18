@@ -70,7 +70,7 @@ function AppointmentModal({ isOpen, onClose }) {
         throw new Error(result.message || 'Error al agendar la cita.');
       }
 
-      setFormSuccess('¡Cita agendada con éxito! La psicóloga revisará tu solicitud.');
+      setFormSuccesssetFormSuccess ('¡Solicitud enviada con éxito! La psicóloga se pondrá en contacto con usted a la brevedad posible, ya sea por WhatsApp o correo electrónico, para confirmar y coordinar los detalles de su cita. Por favor, esté al pendiente.');
       // Opcional: limpiar el formulario después del éxito
       setName('');
       setEmail('');
