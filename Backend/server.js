@@ -117,6 +117,7 @@ app.get('/api/appointments', async (req, res) => {
   }
 });
 
+// Al final de tu server.js
 app.listen(PORT, () => {
-  console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor backend V2 (CORREOS) corriendo en http://localhost:${PORT}`);
 });
