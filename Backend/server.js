@@ -19,10 +19,15 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // --- CONFIGURACIÓN DEL CORREO (NODEMAILER) ---
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // <--- ESTA LÍNEA HACE LA MAGIA
+  host: "smtp.gmail.com",
+  port: 587,                 // <--- IMPORTANTE: Puerto 587
+  secure: false,             // <--- IMPORTANTE: Tiene que ser false para puerto 587
   auth: {
-    user: process.env.EMAIL_USER, // Tu correo
-    pass: process.env.EMAIL_PASS, // Tu contraseña de aplicación
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false // Ayuda a que no falle por certificados en la nube
   }
 });
 
