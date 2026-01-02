@@ -34,30 +34,46 @@ function AppointmentModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
     setFormSuccess('');
+    
+    // Agregamos un estado de "Cargando" (asegúrate de crear este estado si quieres: const [isLoading, setIsLoading] = useState(false);)
+    // O simplemente usamos el botón para feedback visual
+    console.log("1. Iniciando envío del formulario...");
 
     const fullPhoneNumber = `+${getCountryCallingCode(country, metadata)}${number}`;
 
+    // Validaciones
     if (!name || !email || !country || !number || !selectedDateTime) {
       setFormError('Por favor, completa todos los campos obligatorios.');
       return;
     }
 
     if (!isPossiblePhoneNumber(fullPhoneNumber, { metadata })) {
-      setFormError('El número de teléfono no es válido. Por favor, revisa el país y el número.');
+      setFormError('El número de teléfono no es válido.');
       return;
     }
 
     const appointmentDate = parseDateTime(selectedDateTime);
-
     const now = new Date();
     if (isBefore(appointmentDate, now)) {
       setFormError('No puedes agendar citas en el pasado.');
       return;
     }
+
+    // PREPARAR DATOS (Aquí está el cambio importante de la fecha)
+    const payload = {
+        name: name,
+        email: email,
+        phone: fullPhoneNumber,
+        // Forzamos formato simple YYYY-MM-DD para evitar errores de ISO
+        date: format(appointmentDate, 'yyyy-MM-dd'), 
+        time: format(appointmentDate, 'HH:mm'),
+    };
+
+    console.log("2. Datos a enviar (Payload):", payload);
 
     try {
       const response = await fetch(API_URL, {
@@ -65,14 +81,10 @@ function AppointmentModal({ isOpen, onClose }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: name,
-          email: email,
-          phone: fullPhoneNumber,
-          date: appointmentDate,
-          time: format(appointmentDate, 'HH:mm'),
-        }),
+        body: JSON.stringify(payload),
       });
+
+      console.log("3. Respuesta del servidor recibida. Status:", response.status);
 
       const result = await response.json();
 
@@ -80,18 +92,19 @@ function AppointmentModal({ isOpen, onClose }) {
         throw new Error(result.message || 'Error al agendar la cita.');
       }
 
-      setFormSuccess('¡Solicitud enviada con éxito! La psicóloga se pondrá en contacto con usted a la brevedad posible, ya sea por WhatsApp o correo electrónico, para confirmar y coordinar los detalles de su cita. Por favor, esté al pendiente.');
-
+      setFormSuccess('¡Solicitud enviada con éxito! Revisa tu correo o espera contacto.');
+      
+      // Limpiar formulario
       setName('');
       setEmail('');
-      setCountry('MX');
       setNumber('');
       setSelectedDateTime('');
+      
     } catch (error) {
-      console.error('Error al enviar la cita:', error);
+      console.error('Error REAL:', error);
       setFormError(`Error: ${error.message}`);
     }
-  };
+};
 
   const parseDateTime = (dateTimeString) => {
     try {
