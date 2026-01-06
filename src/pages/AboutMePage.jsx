@@ -37,15 +37,24 @@ function AboutMePage() {
     >
       <div className="absolute inset-0 bg-white opacity-90 z-0"></div>
       <div className="relative z-10 flex flex-col min-h-screen items-center justify-start py-8">
+        {/* --- INICIO DEL NUEVO BOTÓN DE FLECHA --- */}
         <Link
-          to="/servicios" // Vuelve a la página de Información
+          to="/servicios"
           className="absolute top-4 left-4 text-gray-600 hover:text-gray-900 focus:outline-none z-20"
           aria-label="Volver a la página de Información"
         >
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            strokeWidth={2.5}
+            stroke="currentColor" 
+            className="w-8 h-8"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
         </Link>
+        {/* --- FIN DEL NUEVO BOTÓN DE FLECHA --- */}
 
         <img
           src={LogoImage}
