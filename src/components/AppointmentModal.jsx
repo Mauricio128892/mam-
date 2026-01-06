@@ -1,27 +1,29 @@
 // src/components/AppointmentModal.jsx
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, isBefore } from 'date-fns';
-import { es } from 'date-fns/locale';
+// import { es } from 'date-fns/locale'; // No se está usando, pero lo dejo comentado por si acaso
 import BackgroundHome from '../assets/images/FONDO.png';
 import {
   getCountries,
   getCountryCallingCode,
   isPossiblePhoneNumber,
-  parsePhoneNumber,
+  // parsePhoneNumber, // No se usa
 } from 'react-phone-number-input';
 import metadata from 'libphonenumber-js/metadata.min.json';
 
 const API_URL = 'https://mam-33cu.onrender.com/api/appointments';
 
 function AppointmentModal({ isOpen, onClose }) {
+  // Estados individuales
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [country, setCountry] = useState('MX');
   const [number, setNumber] = useState('');
   const [selectedDateTime, setSelectedDateTime] = useState('');
+  const [reason, setReason] = useState(''); // <--- 1. NUEVO ESTADO PARA EL MOTIVO
+  
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
-
   const [animateIn, setAnimateIn] = useState(false);
 
   useEffect(() => {
@@ -34,13 +36,24 @@ function AppointmentModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
- const handleSubmit = async (e) => {
+  const parseDateTime = (dateTimeString) => {
+    try {
+      const date = parseISO(dateTimeString);
+      if (isNaN(date.getTime())) {
+        throw new Error('Fecha y hora seleccionada no válida.');
+      }
+      return date;
+    } catch (error) {
+      setFormError('Formato de fecha y hora no válido. Por favor, selecciona una fecha y hora.');
+      return new Date(0);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
     setFormSuccess('');
     
-    // Agregamos un estado de "Cargando" (asegúrate de crear este estado si quieres: const [isLoading, setIsLoading] = useState(false);)
-    // O simplemente usamos el botón para feedback visual
     console.log("1. Iniciando envío del formulario...");
 
     const fullPhoneNumber = `+${getCountryCallingCode(country, metadata)}${number}`;
@@ -63,14 +76,14 @@ function AppointmentModal({ isOpen, onClose }) {
       return;
     }
 
-    // PREPARAR DATOS (Aquí está el cambio importante de la fecha)
+    // PREPARAR DATOS
     const payload = {
         name: name,
         email: email,
         phone: fullPhoneNumber,
-        // Forzamos formato simple YYYY-MM-DD para evitar errores de ISO
         date: format(appointmentDate, 'yyyy-MM-dd'), 
         time: format(appointmentDate, 'HH:mm'),
+        reason: reason // <--- 2. AGREGAMOS EL MOTIVO AL ENVÍO
     };
 
     console.log("2. Datos a enviar (Payload):", payload);
@@ -92,30 +105,18 @@ function AppointmentModal({ isOpen, onClose }) {
         throw new Error(result.message || 'Error al agendar la cita.');
       }
 
-      setFormSuccess('¡Solicitud enviada con éxito! Revisa tu correo o espera contacto.');
+      setFormSuccess('¡Solicitud enviada con éxito! Revisa tu correo.');
       
       // Limpiar formulario
       setName('');
       setEmail('');
       setNumber('');
       setSelectedDateTime('');
+      setReason(''); // <--- LIMPIAMOS EL CAMPO MOTIVO
       
     } catch (error) {
       console.error('Error REAL:', error);
       setFormError(`Error: ${error.message}`);
-    }
-};
-
-  const parseDateTime = (dateTimeString) => {
-    try {
-      const date = parseISO(dateTimeString);
-      if (isNaN(date.getTime())) {
-        throw new Error('Fecha y hora seleccionada no válida.');
-      }
-      return date;
-    } catch (error) {
-      setFormError('Formato de fecha y hora no válido. Por favor, selecciona una fecha y hora.');
-      return new Date(0);
     }
   };
 
@@ -150,7 +151,7 @@ function AppointmentModal({ isOpen, onClose }) {
         className={`bg-white p-8 rounded-lg shadow-2xl max-w-lg w-full relative z-10 transform transition-all duration-300 ${
           animateIn ? 'scale-100 opacity-100 animate-fade-in-up-custom' : 'scale-95 opacity-0'
         }`}
-        style={{ animationDelay: '0.1s' }}
+        style={{ animationDelay: '0.1s', maxHeight: '90vh', overflowY: 'auto' }} // Agregado scroll por si el form es muy largo
       >
         <button
           onClick={onClose}
@@ -161,6 +162,8 @@ function AppointmentModal({ isOpen, onClose }) {
         </button>
         <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">Agendar Cita</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          
+          {/* CAMPO NOMBRE */}
           <div>
             <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">
               Nombre Completo:
@@ -174,6 +177,8 @@ function AppointmentModal({ isOpen, onClose }) {
               required
             />
           </div>
+
+          {/* CAMPO EMAIL */}
           <div>
             <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
               Email:
@@ -187,6 +192,8 @@ function AppointmentModal({ isOpen, onClose }) {
               required
             />
           </div>
+
+          {/* CAMPO PAIS */}
           <div>
             <label htmlFor="country" className="block text-gray-700 text-sm font-bold mb-2">
               País:
@@ -204,6 +211,8 @@ function AppointmentModal({ isOpen, onClose }) {
               ))}
             </select>
           </div>
+
+          {/* CAMPO TELEFONO */}
           <div>
             <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">
               Teléfono (WhatsApp preferible):
@@ -215,24 +224,20 @@ function AppointmentModal({ isOpen, onClose }) {
                 id="phone"
                 value={number}
                 onChange={(e) => setNumber(e.target.value)}
-                placeholder="Ingresa tu número de teléfono"
+                placeholder="Ingresa tu número"
                 className="ml-2 flex-1 outline-none border-none"
                 required
               />
             </div>
           </div>
+
+          {/* CAMPO FECHA */}
           <div>
             <label htmlFor="datetime" className="block text-gray-700 text-sm font-bold mb-2">
               Fecha y Hora Preferida:
             </label>
             <p className="text-sm text-gray-600 mb-2">
-              Horario de atención:
-              <br/>
-              Lunes a Sábado: 5:00 PM a 10:00 PM
-              <br/>
-              Domingos: 10:00 AM a 2:00 PM
-              <br/>
-              (Por favor, selecciona horas en punto.)
+              Lunes a Sábado: 5:00 PM - 10:00 PM | Domingo: 10:00 AM - 2:00 PM
             </p>
             <input
               type="datetime-local"
@@ -244,18 +249,20 @@ function AppointmentModal({ isOpen, onClose }) {
               required
             />
           </div>
+
+          {/* 3. CAMPO MOTIVO (TEXTAREA) CORREGIDO */}
           <div className="mb-4">
-  <label className="block text-gray-700 text-sm font-bold mb-2">
-    ¿Cuál es el motivo de tu consulta?
-  </label>
-  <textarea
-    name="reason"
-    value={formData.reason}
-    onChange={handleChange}
-    placeholder="Ej: Ansiedad, terapia de pareja, dudas generales..."
-    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-24 resize-none"
-  />
-</div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              ¿Cuál es el motivo de tu consulta?
+            </label>
+            <textarea
+              id="reason"
+              value={reason} // Usamos la variable de estado 'reason'
+              onChange={(e) => setReason(e.target.value)} // Usamos setReason
+              placeholder="Ej: Ansiedad, terapia de pareja, dudas generales..."
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-24 resize-none"
+            />
+          </div>
 
           {formError && <p className="text-red-500 text-sm italic">{formError}</p>}
           {formSuccess && <p className="text-green-600 text-sm italic">{formSuccess}</p>}
