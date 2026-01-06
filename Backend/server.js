@@ -3,7 +3,8 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const nodemailer = require('nodemailer'); 
+// 1. CAMBIO: Quitamos nodemailer e importamos Resend
+const { Resend } = require('resend'); 
 
 const app = express();
 const PORT = process.env.PORT || 5000; 
@@ -12,27 +13,13 @@ const PORT = process.env.PORT || 5000;
 app.use(cors()); 
 app.use(express.json()); 
 
+// 2. CAMBIO: Inicializamos Resend con la API Key
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Conectado a MongoDB Atlas'))
-  .catch(err => console.error('Error al conectar a MongoDB Atlas:', err));
-
-// --- CONFIGURACIÓN DEL CORREO (NODEMAILER) ---
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,               // <--- CAMBIO: Puerto SSL
-  secure: true,            // <--- CAMBIO: true OBLIGATORIO para el puerto 465
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  // Opciones extra para evitar errores de certificados
-  tls: {
-    rejectUnauthorized: false
-  },
-  connectionTimeout: 10000, // 10 segundos
-  greetingTimeout: 10000 
-});
+  .then(() => console.log('✅ Conectado a MongoDB Atlas'))
+  .catch(err => console.error('❌ Error al conectar a MongoDB Atlas:', err));
 
 // --- MÓDULO DE RESEÑAS ---
 const reviewSchema = new mongoose.Schema({
@@ -62,43 +49,43 @@ app.post('/api/reviews', async (req, res) => {
   }
 });
 
-// --- MÓDULO DE CITAS (CORREGIDO) ---
+// --- MÓDULO DE CITAS ---
 const appointmentSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
-  phone: { type: String, required: true }, // <--- CAMPO NUEVO AGREGADO
+  phone: { type: String, required: true },
   date: { type: Date, required: true },
   time: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
 const Appointment = mongoose.model('Appointment', appointmentSchema);
 
-// POST una nueva cita (CON ENVÍO DE CORREO)
+// POST una nueva cita (CON ENVÍO POR RESEND)
 app.post('/api/appointments', async (req, res) => {
-  // Leemos también el 'phone' del cuerpo de la petición
   const { name, email, phone, date, time } = req.body;
 
-  // Validamos que venga el teléfono
   if (!name || !email || !phone || !date || !time) {
-    return res.status(400).json({ message: 'Todos los campos son obligatorios (nombre, email, teléfono, fecha y hora).' });
+    return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
   }
 
-  // Creamos la cita incluyendo el teléfono
   const newAppointment = new Appointment({ name, email, phone, date, time });
 
   try {
-    // 1. Guardar en Base de Datos
+    // 1. Guardar en Base de Datos primero
     const savedAppointment = await newAppointment.save();
+    console.log('✅ Cita guardada en MongoDB');
 
-    // Formatear fecha para que se vea bonita en el correo (Opcional, pero recomendado)
+    // Formatear fecha
     const fechaLegible = new Date(date).toLocaleDateString('es-MX', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
 
-    // 2. Configurar el correo de aviso
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER, // Te llega a ti
+    // 2. CAMBIO: Enviar correo usando RESEND (HTTP en vez de SMTP)
+    // NOTA IMPORTANTE: 'from' debe ser 'onboarding@resend.dev' si no tienes dominio propio.
+    // 'to' debe ser tu correo verificado (el tuyo propio).
+    const emailResponse = await resend.emails.send({
+      from: 'onboarding@resend.dev', 
+      to: 'mnvalladares05@gmail.com', // <--- TU CORREO REAL AQUI
       subject: `📅 Nueva Cita Solicitada: ${name}`,
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
@@ -106,22 +93,24 @@ app.post('/api/appointments', async (req, res) => {
             <hr>
             <p><strong>Cliente:</strong> ${name}</p>
             <p><strong>Correo:</strong> ${email}</p>
-            <p><strong>Teléfono/WhatsApp:</strong> ${phone}</p> <p><strong>Fecha solicitada:</strong> ${fechaLegible}</p>
+            <p><strong>Teléfono:</strong> ${phone}</p>
+            <p><strong>Fecha solicitada:</strong> ${fechaLegible}</p>
             <p><strong>Hora:</strong> ${time}</p>
             <hr>
-            <p style="font-size: 0.9em; color: #777;">Este correo fue generado automáticamente por tu sitio web.</p>
         </div>
       `
-    };
+    });
 
-    // 3. Enviar el correo
-    await transporter.sendMail(mailOptions);
-    console.log('Correo de notificación enviado con éxito');
-
+    console.log('✅ Correo enviado con éxito ID:', emailResponse.data?.id);
+    
+    // Respondemos éxito al Frontend
     res.status(201).json(savedAppointment); 
+
   } catch (err) {
-    console.error('Error al guardar o enviar correo:', err);
-    res.status(400).json({ message: err.message });
+    console.error('❌ Error en el proceso:', err);
+    // Aunque falle el correo, si se guardó en Mongo, respondemos éxito pero con advertencia en logs
+    // O puedes devolver error 500 si prefieres que el usuario lo sepa.
+    res.status(500).json({ message: 'Cita guardada, pero hubo error al enviar notificación.' });
   }
 });
 
@@ -134,7 +123,6 @@ app.get('/api/appointments', async (req, res) => {
   }
 });
 
-// Arrancar el servidor
 app.listen(PORT, () => {
-  console.log(`Servidor backend V2 (CORREOS) corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
 });
