@@ -3,8 +3,9 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-// 1. CAMBIO: Quitamos nodemailer e importamos Resend
 const { Resend } = require('resend'); 
+// 1. IMPORTAR EL LIMITADOR
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 5000; 
@@ -13,7 +14,16 @@ const PORT = process.env.PORT || 5000;
 app.use(cors()); 
 app.use(express.json()); 
 
-// 2. CAMBIO: Inicializamos Resend con la API Key
+// 2. CONFIGURAR EL ANTI-SPAM
+// Esto permite solo 5 intentos cada 15 minutos desde la misma IP
+const appointmentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // Limite de 5 peticiones por IP
+  message: { message: '⛔ Has intentado agendar demasiadas veces. Por favor espera 15 minutos.' },
+  standardHeaders: true, 
+  legacyHeaders: false, 
+});
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Conexión a MongoDB
@@ -56,37 +66,40 @@ const appointmentSchema = new mongoose.Schema({
   phone: { type: String, required: true },
   date: { type: Date, required: true },
   time: { type: String, required: true },
+  reason: { type: String }, // <--- 3. NUEVO CAMPO: Motivo de la cita
   createdAt: { type: Date, default: Date.now },
 });
 const Appointment = mongoose.model('Appointment', appointmentSchema);
 
-// POST una nueva cita (CON ENVÍO POR RESEND)
-app.post('/api/appointments', async (req, res) => {
-  const { name, email, phone, date, time } = req.body;
+// POST una nueva cita (CON PROTECCIÓN ANTI-SPAM)
+// 4. APLICAMOS EL "appointmentLimiter" AQUI
+app.post('/api/appointments', appointmentLimiter, async (req, res) => {
+  // 5. RECIBIMOS EL CAMPO "reason"
+  const { name, email, phone, date, time, reason } = req.body;
 
   if (!name || !email || !phone || !date || !time) {
-    return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
+    return res.status(400).json({ message: 'Faltan campos obligatorios.' });
   }
 
-  const newAppointment = new Appointment({ name, email, phone, date, time });
+  // Guardamos el motivo (si no escriben nada, guardamos "Sin especificar")
+  const newAppointment = new Appointment({ 
+    name, email, phone, date, time, 
+    reason: reason || 'Sin especificar' 
+  });
 
   try {
-    // 1. Guardar en Base de Datos primero
     const savedAppointment = await newAppointment.save();
     console.log('✅ Cita guardada en MongoDB');
 
-    // Formatear fecha
     const fechaLegible = new Date(date).toLocaleDateString('es-MX', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
 
-    // 2. CAMBIO: Enviar correo usando RESEND (HTTP en vez de SMTP)
-    // NOTA IMPORTANTE: 'from' debe ser 'onboarding@resend.dev' si no tienes dominio propio.
-    // 'to' debe ser tu correo verificado (el tuyo propio).
-    const emailResponse = await resend.emails.send({
+    // 6. AGREGAMOS EL MOTIVO AL CORREO
+    await resend.emails.send({
       from: 'onboarding@resend.dev', 
-      to: 'mnvalladares05@gmail.com', // <--- TU CORREO REAL AQUI
-      subject: `📅 Nueva Cita Solicitada: ${name}`,
+      to: 'mnvalladares05@gmail.com', 
+      subject: `📅 Nueva Cita: ${name}`,
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
             <h2 style="color: #2c3e50;">¡Tienes una nueva solicitud de cita!</h2>
@@ -94,23 +107,23 @@ app.post('/api/appointments', async (req, res) => {
             <p><strong>Cliente:</strong> ${name}</p>
             <p><strong>Correo:</strong> ${email}</p>
             <p><strong>Teléfono:</strong> ${phone}</p>
-            <p><strong>Fecha solicitada:</strong> ${fechaLegible}</p>
+            <p><strong>Fecha:</strong> ${fechaLegible}</p>
             <p><strong>Hora:</strong> ${time}</p>
+            <div style="background-color: #f9f9f9; padding: 10px; border-left: 4px solid #2c3e50; margin-top: 10px;">
+                <p style="margin: 0;"><strong>📝 Motivo de la consulta:</strong></p>
+                <p style="margin-top: 5px;">${reason || 'El cliente no especificó un motivo.'}</p>
+            </div>
             <hr>
         </div>
       `
     });
 
-    console.log('✅ Correo enviado con éxito ID:', emailResponse.data?.id);
-    
-    // Respondemos éxito al Frontend
+    console.log('✅ Correo enviado con éxito');
     res.status(201).json(savedAppointment); 
 
   } catch (err) {
-    console.error('❌ Error en el proceso:', err);
-    // Aunque falle el correo, si se guardó en Mongo, respondemos éxito pero con advertencia en logs
-    // O puedes devolver error 500 si prefieres que el usuario lo sepa.
-    res.status(500).json({ message: 'Cita guardada, pero hubo error al enviar notificación.' });
+    console.error('❌ Error:', err);
+    res.status(500).json({ message: 'Error interno al procesar la cita.' });
   }
 });
 

@@ -244,6 +244,18 @@ function AppointmentModal({ isOpen, onClose }) {
               required
             />
           </div>
+          <div className="mb-4">
+  <label className="block text-gray-700 text-sm font-bold mb-2">
+    ¿Cuál es el motivo de tu consulta?
+  </label>
+  <textarea
+    name="reason"
+    value={formData.reason}
+    onChange={handleChange}
+    placeholder="Ej: Ansiedad, terapia de pareja, dudas generales..."
+    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-24 resize-none"
+  />
+</div>
 
           {formError && <p className="text-red-500 text-sm italic">{formError}</p>}
           {formSuccess && <p className="text-green-600 text-sm italic">{formSuccess}</p>}
