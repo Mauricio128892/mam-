@@ -20,7 +20,7 @@ function AppointmentModal({ isOpen, onClose }) {
   const [selectedDateTime, setSelectedDateTime] = useState('');
   const [reason, setReason] = useState('');
   
-  // NUEVO: Estado para la modalidad (Por defecto 'presencial')
+  // Estado para la modalidad
   const [appointmentType, setAppointmentType] = useState('presencial');
 
   // Estados de Control Visual
@@ -38,7 +38,6 @@ function AppointmentModal({ isOpen, onClose }) {
       setIsSuccess(false);
       setIsLoading(false);
       setFormError('');
-      // Resetear formulario (opcional, si quieres que se limpie al reabrir)
       setAppointmentType('presencial'); 
     } else {
       setAnimateIn(false);
@@ -98,7 +97,7 @@ function AppointmentModal({ isOpen, onClose }) {
       date: format(appointmentDate, 'yyyy-MM-dd'),
       time: format(appointmentDate, 'HH:mm'),
       reason: reason,
-      appointmentType: appointmentType // <--- ENVIAMOS LA MODALIDAD AQUI
+      appointmentType: appointmentType
     };
 
     try {
@@ -151,9 +150,9 @@ function AppointmentModal({ isOpen, onClose }) {
     };
   }).sort((a, b) => a.name.localeCompare(b.name));
 
- return (
+  return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto" // CAMBIO 1: Permitimos scroll en la pantalla completa
+      className="fixed inset-0 z-50 overflow-y-auto"
       style={{
         backgroundImage: `url(${BackgroundHome})`,
         backgroundSize: 'cover',
@@ -164,14 +163,12 @@ function AppointmentModal({ isOpen, onClose }) {
       {/* Capa blanca semitransparente del fondo */}
       <div className="fixed inset-0 bg-white opacity-90 transition-opacity"></div>
 
-      {/* CAMBIO 2: Este div centra el contenido pero deja que crezca si es necesario */}
       <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
         
         <div
           className={`relative bg-white p-6 sm:p-8 rounded-lg shadow-2xl w-full max-w-lg transform transition-all duration-300 text-left my-8 ${
             animateIn ? 'scale-100 opacity-100 animate-fade-in-up-custom' : 'scale-95 opacity-0'
           }`}
-          // CAMBIO 3: ¡Quitamos el maxHeight y overflowY de aquí!
           style={{ animationDelay: '0.1s' }} 
         >
           {/* Botón de Cerrar */}
@@ -306,21 +303,32 @@ function AppointmentModal({ isOpen, onClose }) {
                   </div>
                 </div>
 
-                {/* Fecha */}
+                {/* Fecha y Hora (CORREGIDO CON AUTO-OPEN) */}
                 <div>
                   <label htmlFor="datetime" className="block text-gray-700 text-sm font-bold mb-2">Fecha y Hora Preferida:</label>
                   <div className="text-sm text-gray-600 mb-2">
                     <p className="text-sm text-yellow-800 font-bold">⚠️ Horarios de Atención:</p>
                     <p>Lunes a Sábado: 5:00 PM - 10:00 PM | Domingo: 10:00 AM - 2:00 PM</p>
                     <p className="text-sm text-yellow-800 font-bold mt-2">⚠️ Aviso:</p>
-                    <p>(La psicóloga confirmará la disponibilidad de la cita. Si no está disponible, se le ofrecerán otros horarios)</p>
+                    <p>(La psicóloga confirmará la disponibilidad de la cita)</p>
                   </div>
+                  
+                  {/* AQUÍ ESTÁ EL TRUCO: onClick={e => e.target.showPicker()} */}
                   <input
                     type="datetime-local"
                     id="datetime"
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-white cursor-pointer"
                     value={selectedDateTime}
                     onChange={(e) => setSelectedDateTime(e.target.value)}
+                    // ESTO ABRE EL CALENDARIO AL DAR CLIC EN CUALQUIER PARTE
+                    onClick={(e) => {
+                      try {
+                        e.target.showPicker();
+                      } catch (error) {
+                        // Si el navegador es muy viejo y no lo soporta, no hace nada
+                        console.log("Navegador no soporta showPicker automático");
+                      }
+                    }}
                     min={getMinDateTime()}
                     required
                   />
