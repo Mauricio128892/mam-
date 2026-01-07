@@ -27,7 +27,7 @@ function HomePage() {
 
         {/* Título y subtítulo */}
         <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-4 animate-fade-in-up-custom">
-          Psicóloga Margarita Velueta
+          Psicóloga Margarita Velueta Méndez
         </h1>
         <p className="text-xl md:text-2xl text-gray-700 mb-10 animate-fade-in-up-custom" style={{ animationDelay: '0.2s' }}>
           Tu bienestar emocional es mi prioridad.
