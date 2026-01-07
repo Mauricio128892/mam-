@@ -15,12 +15,12 @@ function TiposDeTerapiasPage() {
     {
       id: 'individual',
       title: 'Terapia Individual',
-      description: 'Un espacio seguro y confidencial para explorar tus pensamientos y emociones. **Disponible de forma presencial y en línea.** Abordamos ansiedad, depresión, estrés, autoestima, duelo, y desarrollo personal. Mi enfoque es integrativo, adaptando las técnicas a tus necesidades únicas para fomentar tu crecimiento y bienestar emocional.',
+      description: 'Un espacio seguro y confidencial para explorar tus pensamientos y emociones. "Disponible de forma presencial y en línea." Abordamos ansiedad, depresión, estrés, autoestima, duelo, y desarrollo personal. Mi enfoque es integrativo, adaptando las técnicas a tus necesidades únicas para fomentar tu crecimiento y bienestar emocional.',
     },
     {
       id: 'pareja',
       title: 'Terapia de Pareja',
-      description: 'Mejora la comunicación, resuelve conflictos y fortalece el vínculo en la relación. **Ofrecida presencialmente y en línea.** Trabajamos en el reconocimiento de patrones disfuncionales, la gestión de expectativas y el fomento de la empatía para construir una relación más sana y satisfactoria. Ideal para superar crisis, manejar celos o simplemente mejorar la convivencia diaria.',
+      description: 'Mejora la comunicación, resuelve conflictos y fortalece el vínculo en la relación. "Ofrecida presencialmente y en línea." Trabajamos en el reconocimiento de patrones disfuncionales, la gestión de expectativas y el fomento de la empatía para construir una relación más sana y satisfactoria. Ideal para superar crisis, manejar celos o simplemente mejorar la convivencia diaria.',
     },
     {
       id: 'tanatologia',

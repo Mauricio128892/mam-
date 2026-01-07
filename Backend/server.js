@@ -63,7 +63,7 @@ app.post('/api/reviews', async (req, res) => {
     // 2. CAMBIO: Enviar correo de aviso al administrador
     await resend.emails.send({
         from: 'onboarding@resend.dev', 
-        to: 'mnvalladares05@gmail.com', // <--- TU CORREO
+        to: 'margaritapsicologa21@gmail.com', // <--- TU CORREO
         subject: `📝 Nueva Reseña (Pendiente de Aprobación)`,
         html: `
           <div style="font-family: Arial, sans-serif; color: #333;">
@@ -117,7 +117,7 @@ app.post('/api/appointments', async (req, res) => {
 
     await resend.emails.send({
       from: 'onboarding@resend.dev', 
-      to: 'mnvalladares05@gmail.com', 
+      to: 'margaritapsicologa21@gmail.com', 
       subject: `📅 Nueva Cita: ${name}`,
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
