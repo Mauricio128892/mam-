@@ -100,8 +100,8 @@ function TiposDeTerapiasPage() {
           Tipos de Terapias
         </h1>
         <p className="text-lg md:text-xl text-gray-700 mb-8 text-center max-w-2xl animate-fade-in-up-custom" style={{ animationDelay: '0.3s' }}>
-          Ofrezco acompañamiento psicológico integral para **niños, adolescentes y adultos**, adaptando cada terapia a las necesidades individuales para fomentar tu bienestar y crecimiento.
-          **Todas las terapias están disponibles de forma presencial y en línea.**
+          Ofrezco acompañamiento psicológico integral para "niños, adolescentes y adultos", adaptando cada terapia a las necesidades individuales para fomentar tu bienestar y crecimiento.
+          "Todas las terapias están disponibles de forma presencial y en línea."
         </p>
 
         <div className="w-full max-w-4xl px-4 space-y-6">
